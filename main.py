@@ -10,7 +10,7 @@ EP_STEPS = 5000
 MEMORY_CAPACITY = 10000
 RENDER = True
 
-_R = 10
+_R = 100
 _r = 0
 _sheepTheta = 0
 _dogTheta = 0
@@ -31,7 +31,7 @@ for i in range(EPISODES):
     observation = env.reset()
     ep_r = 0
     for j in range(EP_STEPS):
-        #if RENDER : env.render()
+        if RENDER : env.render()
         # add explorative noise to action
         action = ddpg.choose_action(observation)
         action = np.clip(np.random.normal(action, var), a_low_bound, a_high_bound)

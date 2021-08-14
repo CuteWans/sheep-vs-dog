@@ -43,16 +43,17 @@ class ChaseEnv(object):
         self.state[1] = theta
         self.state[1] -= int(self.state[1] / (2 * np.pi)) * (2 * np.pi)
         theta = np.fabs(self.state[1] - self.state[2])
-        theta -= int(theta / (2 * np.pi)) * (2 * np.pi)
-        if theta <= V / R * dt :
-            self.state[2] = self.state[1]
-        elif self.state[2] - self.state[1] > np.pi :
+        if theta > np.pi : theta = 2 * np.pi - theta
+        #if theta <= V / R * dt:
+        #    self.state[2] = self.state[1]
+        #el
+        if self.state[2] > ((self.state[1] + np.pi) - 2 * np.pi if (self.state[1] + np.pi) > 2 * np.pi else (self.state[1] + np.pi)) :
             self.state[2] += V / R * dt
         else:
             self.state[2] += 2 * np.pi - V / R * dt
         self.state[2] -= int(self.state[2] / (2 * np.pi)) * (2 * np.pi)
 
-        if self.state[0] >= R and np.fabs(self.state[1] - self.state[2]) != 0 :
+        if self.state[0] >= R and np.fabs(self.state[1] - self.state[2]) != 0:
             done = True
 
         #k, a, b, c, d = 1, 1, 0, 1, 0
@@ -74,7 +75,7 @@ class ChaseEnv(object):
     def render(self):
         if self.viewer is None:
             self.viewer = rendering.Viewer(600, 600)
-        circle = rendering.make_circle(100, filled=False)
+        circle = rendering.make_circle(self.R, filled=False)
 
         circle_transform = rendering.Transform(translation=(300, 300))
         circle.add_attr(circle_transform)
@@ -85,6 +86,13 @@ class ChaseEnv(object):
             self.state[0] * np.cos(self.state[1]) + 300, 300 + self.state[0] * np.sin(self.state[1])))
         sheep.add_attr(sheep_transform)
 
+        dog = rendering.make_circle(4)
+        dog.set_color(.7, .5, .5)
+        dog_transform = rendering.Transform(translation=(
+            self.R * np.cos(self.state[2]) + 300, 300 + self.R * np.sin(self.state[2])))
+        dog.add_attr(dog_transform)
+
         self.viewer.add_geom(circle)
         self.viewer.add_geom(sheep)
+        self.viewer.add_geom(dog)
         self.viewer.render()
