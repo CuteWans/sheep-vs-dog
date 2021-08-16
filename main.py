@@ -6,7 +6,7 @@ from env import ChaseEnv
 
 #####################  hyper parameters  ####################
 EPISODES = 200
-EP_STEPS = 5000
+EP_STEPS = 800
 MEMORY_CAPACITY = 10000
 RENDER = True
 
@@ -14,8 +14,8 @@ _R = 100
 _r = 0
 _sheepTheta = 0
 _dogTheta = 0
-_dogV = 1
-_sheepV = 0.8
+_dogV = 20
+_sheepV = 10
 
 env = ChaseEnv(_R, _r, _sheepTheta, _sheepV, _dogTheta, _dogV)
 s_dim = env.state_dim
@@ -44,7 +44,7 @@ for i in range(EPISODES):
 
         observation = observation_
         ep_r += reward
-        if j == EP_STEPS - 1 or done :
+        if j == EP_STEPS - 1 or observation[0] >= _R or done :
             print('Episode: ', i, ' Reward: %i' % (ep_r), 'Explore: %.2f' % var, 'done' if done else '----')
             if ep_r > 5000 : RENDER = True
             break

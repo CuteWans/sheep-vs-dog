@@ -24,7 +24,10 @@ class ChaseEnv(object):
         self.sheepTheta = _sheepTheta
         self.dogTheta = _dogTheta
 
+        self.reward = 0
+
     def step(self, action):
+        # print(action)
         done = False
         r = self.state[0]
         R = self.R
@@ -32,44 +35,60 @@ class ChaseEnv(object):
         dt = self.dt
         v = self.sheepV
         V = self.dogV
-        r_ = r + v * np.sin(action) * dt
+        #print(action)
+        action[0] = max(np.pi / 12, action[0])
+        action[0] = min(11 * np.pi / 12, action[0])
+        #print(action)
         x = np.sqrt(r ** 2 + (v * dt) ** 2 + 2 * r * v * np.sin(action) * dt)
         beta = np.arcsin(v * np.cos(action) * dt / x)
-        if action < np.pi / 2 :
+        if action < np.pi / 2:
             theta -= beta
-        else :
-            theta += beta
-        self.state[0] = r_
-        self.state[1] = theta
-        self.state[1] -= int(self.state[1] / (2 * np.pi)) * (2 * np.pi)
-        theta = np.fabs(self.state[1] - self.state[2])
-        if theta > np.pi : theta = 2 * np.pi - theta
-        #if theta <= V / R * dt:
-        #    self.state[2] = self.state[1]
-        #el
-        if self.state[2] > ((self.state[1] + np.pi) - 2 * np.pi if (self.state[1] + np.pi) > 2 * np.pi else (self.state[1] + np.pi)) :
-            self.state[2] += V / R * dt
         else:
-            self.state[2] += 2 * np.pi - V / R * dt
-        self.state[2] -= int(self.state[2] / (2 * np.pi)) * (2 * np.pi)
+            theta += beta
+        self.state[0] = x
+        self.state[1] = theta
+        self.state[1] -= (self.state[1] // (2 * np.pi)) * (2 * np.pi)
 
-        if self.state[0] >= R and np.fabs(self.state[1] - self.state[2]) != 0:
+        nxt = -1
+        if self.state[1] > np.pi:
+            if self.state[1] - np.pi < self.state[2] and self.state[2] < self.state[1]:
+                nxt = self.state[2] + V / R * dt
+            else:
+                nxt = self.state[2] - V / R * dt
+        else:
+            if self.state[1] < self.state[2] and self.state[2] < self.state[1] + np.pi:
+                nxt = self.state[2] - V / R * dt
+            else:
+                nxt = self.state[2] + V / R * dt
+
+        if (self.state[2] < self.state[1] and self.state[1] < nxt) or (
+                self.state[2] > self.state[1] and self.state[1] > nxt):
+            nxt = self.state[1]
+        self.state[2] = nxt
+        self.state[2] -= (self.state[2] // (2 * np.pi)) * (2 * np.pi)
+
+        theta = np.fabs(self.state[1] - self.state[2])
+        if theta > np.pi: theta = 2 * np.pi - theta
+
+        if self.state[0] >= R and theta != 0:
             done = True
+            action_r = 1000 * R / R - self.reward
+        elif v / self.state[0] <= V / R and theta == 0:
+            done = True
+            action_r = - 1000 * R / R - self.reward
+        else:
+            action_r = -(R - x) ** 2 + 1 * theta - self.reward
 
-        #k, a, b, c, d = 1, 1, 0, 1, 0
-        #reward = k * (a * theta + b) / (c * (self.R - r_) + d)
-        a, b, c = 1, 1, -1
-        reward = a * r_ + b * theta + c
+        self.reward += action_r
 
-        #print(r_, theta)
-
-        return [self.state[0], theta], reward[0], done
+        return [self.state[0], theta], action_r[0], done
 
     def reset(self):
         self.state[0] = self.r
         self.state[1] = self.sheepTheta
         self.state[2] = self.dogTheta
-        if self.viewer is not None : del self.viewer
+        self.reward = 0
+        if self.viewer is not None: del self.viewer
         return [self.state[0], np.fabs(self.state[1] - self.state[2])]
 
     def render(self):
